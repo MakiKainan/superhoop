@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-orbitron {
+    font-family: 'Orbitron', monospace, sans-serif;
+  }
+  .font-chakra {
+    font-family: 'Chakra Petch', sans-serif;
+  }
+  .font-sans-clean {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  .text-glow-amber {
+    text-shadow: 0 0 16px rgba(245, 158, 11, 0.65), 0 0 32px rgba(245, 158, 11, 0.3);
+  }
+  .text-glow-red {
+    text-shadow: 0 0 16px rgba(239, 68, 68, 0.75), 0 0 32px rgba(239, 68, 68, 0.35);
+  }
+  .text-glow-emerald {
+    text-shadow: 0 0 16px rgba(16, 185, 129, 0.75), 0 0 32px rgba(16, 185, 129, 0.35);
+  }
+  .text-glow-cyan {
+    text-shadow: 0 0 16px rgba(6, 182, 212, 0.75), 0 0 32px rgba(6, 182, 212, 0.35);
+  }
+}

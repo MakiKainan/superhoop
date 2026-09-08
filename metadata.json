@@ -1,0 +1,6 @@
+{
+  "name": "Arcade Hoop Projector",
+  "description": "An embedded systems arcade basketball projector frontend with Web Serial Arduino integration, hoop alignment calibration, procedural audio, and sensor simulation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
