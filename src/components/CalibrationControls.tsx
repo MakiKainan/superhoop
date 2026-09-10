@@ -200,14 +200,14 @@ export const CalibrationControls: React.FC<CalibrationControlsProps> = ({
 
         <div className="flex gap-1.5 font-mono">
           <button
-            onClick={() => update({ xPercent: 50, yPercent: 32 })}
+            onClick={() => update({ xPercent: 50, yPercent: 25 })}
             className="px-2 py-0.5 bg-neutral-900 hover:bg-neutral-800 rounded border border-neutral-800 text-neutral-300"
             title="Snap to Center Top"
           >
             Center
           </button>
           <button
-            onClick={() => update({ widthPx: 380, heightPx: 250, rimDiameterPx: 120 })}
+            onClick={() => update({ widthPx: 395, heightPx: 250, rimDiameterPx: 118 })}
             className="px-2 py-0.5 bg-neutral-900 hover:bg-neutral-800 rounded border border-neutral-800 text-neutral-300"
             title="Standard Scale"
           >

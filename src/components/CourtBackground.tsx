@@ -125,17 +125,27 @@ export const CourtBackground: React.FC = () => {
         </svg>
       </div>
 
-      {/* 6. HOOP POLE — flat fill, keylined */}
-      <div className="absolute bottom-[22%] left-1/2 -translate-x-1/2">
-        <svg width="160" height="300" viewBox="0 0 160 300" fill="none">
-          <path
-            d="M 68,300 C 68,190 82,95 80,0 L 96,0 C 98,95 84,190 84,300 Z"
-            fill="#94a3b8"
-            stroke="#0a0a0a"
-            strokeWidth="5"
-          />
-        </svg>
+      {/* 6. HOOP GOAL POST — a real goal stands OUT OF BOUNDS, behind the
+          baseline, not inside the key. The painted baseline is at y=24 of the
+          court svg's 400-unit box, i.e. 63% + 6%*37% = ~65.2% from the top of
+          the viewport, so anchoring the base at 36% from the bottom puts it on
+          the asphalt strip just behind that line. Built from centred flex
+          children rather than a hand-drawn path so the post is dead vertical
+          and cannot drift off the centre line. */}
+      <div className="absolute bottom-[36%] left-1/2 -translate-x-1/2 h-[30vh] flex flex-col items-center">
+        {/* Vertical post — rises behind the backboard (this layer is z-0, the
+            hoop placeholder is z-10, so the board occludes the top of it). */}
+        <div className="relative flex-1 w-[16px] bg-[#94a3b8] border-x-[4px] border-t-[4px] border-[#0a0a0a] rounded-t-xs">
+          {/* Centre highlight — a single hairline down the middle */}
+          <div className="absolute inset-y-1 left-1/2 -translate-x-1/2 w-[2px] bg-[#cbd5e1]/70" />
+        </div>
+
+        {/* Bolted foot plate */}
+        <div className="w-[52px] h-[12px] bg-[#64748b] border-[4px] border-[#0a0a0a] rounded-xs" />
       </div>
+
+      {/* Contact shadow so the post reads as planted on the blacktop */}
+      <div className="absolute bottom-[35.2%] left-1/2 -translate-x-1/2 w-[86px] h-[10px] rounded-[50%] bg-black/45 blur-[2px]" />
 
       {/* 7. COMIC HALFTONE SCREEN over everything */}
       <div className="absolute inset-0 halftone opacity-[0.18] mix-blend-multiply" />

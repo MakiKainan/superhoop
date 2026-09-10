@@ -10,8 +10,6 @@ import { CourtBackground } from './components/CourtBackground';
 import { HoopPlaceholder } from './components/HoopPlaceholder';
 import { ScoreboardHUD } from './components/ScoreboardHUD';
 import { CalibrationControls } from './components/CalibrationControls';
-import { SerialMonitorModal } from './components/SerialMonitorModal';
-import { ArchitectureDocModal } from './components/ArchitectureDocModal';
 import { GameOverModal } from './components/GameOverModal';
 import { audioEngine } from './services/audioEngine';
 import {
@@ -50,8 +48,6 @@ export default function App() {
     baudRate: 115200,
   });
   const [packetLogs, setPacketLogs] = useState<Array<{ id: string; time: string; message: string; type: 'IN' | 'SIM' | 'SYS' }>>([]);
-  const [showSerialModal, setShowSerialModal] = useState(false);
-  const [showDocsModal, setShowDocsModal] = useState(false);
 
   // References for non-stale callbacks inside intervals
   const mockDriverRef = useRef<MockSensorDriver | null>(null);
@@ -59,6 +55,11 @@ export default function App() {
   const roundTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const roundStartTimeRef = useRef<number>(0);
+  // Seconds the current timer leg started from — equals roundDuration for a
+  // fresh round, or whatever was left on the clock when the player resumed.
+  const roundSecondsRef = useRef<number>(60);
+  const pausedRemainingRef = useRef<number>(0);
+  const pauseStartedAtRef = useRef<number>(0);
   const lastScoreTimeRef = useRef<number>(0);
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
@@ -146,7 +147,7 @@ export default function App() {
     };
   }, [handleScoreEvent, addPacketLog]);
 
-  // Global Keyboard shortcuts: C (Calibrate), M (Mute), F (Fullscreen), D (Docs), Escape
+  // Global Keyboard shortcuts: C (Calibrate), M (Mute), F (Fullscreen), P (Pause), Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -160,12 +161,10 @@ export default function App() {
         setIsMuted(muted);
       } else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
-      } else if (e.key === 'd' || e.key === 'D') {
-        setShowDocsModal(prev => !prev);
+      } else if (e.key === 'p' || e.key === 'P') {
+        handleTogglePause();
       } else if (e.key === 'Escape') {
         setIsCalibrating(false);
-        setShowSerialModal(false);
-        setShowDocsModal(false);
       }
     };
 
@@ -184,19 +183,14 @@ export default function App() {
     ScoreStorageService.saveCalibration(DEFAULT_CALIBRATION);
   };
 
-  // START GAME: 3-2-1 COUNTDOWN THEN PLAY
-  const startGame = () => {
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
+  // 3-2-1 PREP COUNTDOWN — shared by a fresh round and by a resume after pause,
+  // so the shooter always gets the same three seconds to get set before the
+  // clock runs. onComplete is what actually puts the game back into play.
+  const runCountdown = (onComplete: () => void) => {
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
 
-    setScore(0);
-    setStreak(0);
-    setMaxStreak(0);
-    setBasketsMade(0);
-    setTimeRemaining(roundDuration);
     setGameState(GameState.COUNTDOWN);
     setCountdownValue(3);
-
     audioEngine.playCountdownBeep(false);
 
     let count = 3;
@@ -210,33 +204,98 @@ export default function App() {
         audioEngine.playCountdownBeep(true);
       } else {
         if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-        // Begin Active Play
-        setGameState(GameState.PLAYING);
-        startRoundTimer();
+        countdownTimerRef.current = null;
+        onComplete();
       }
     }, 1000);
   };
 
-  // ACTIVE ROUND TIMER (Wall-clock accurate with delta time)
-  const startRoundTimer = () => {
+  // START GAME: 3-2-1 COUNTDOWN THEN PLAY
+  const startGame = () => {
+    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+
+    setScore(0);
+    setStreak(0);
+    setMaxStreak(0);
+    setBasketsMade(0);
+    setTimeRemaining(roundDuration);
+
+    runCountdown(() => {
+      setGameState(GameState.PLAYING);
+      startRoundTimer();
+    });
+  };
+
+  // ACTIVE ROUND TIMER (Wall-clock accurate with delta time).
+  // secondsLeft lets a resume pick the clock back up exactly where the pause
+  // froze it instead of always restarting from the full round duration.
+  const startRoundTimer = (secondsLeft: number = roundDuration) => {
     roundStartTimeRef.current = Date.now();
-    const duration = roundDuration;
+    roundSecondsRef.current = secondsLeft;
+    setTimeRemaining(Math.ceil(secondsLeft));
 
     roundTimerRef.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - roundStartTimeRef.current) / 1000);
-      const remaining = Math.max(0, duration - elapsed);
-      setTimeRemaining(remaining);
+      const remaining = Math.max(
+        0,
+        roundSecondsRef.current - (Date.now() - roundStartTimeRef.current) / 1000
+      );
+      const displayed = Math.ceil(remaining);
+      setTimeRemaining(displayed);
 
       // Warning beeps in final 3 seconds
-      if (remaining <= 3 && remaining > 0) {
+      if (displayed <= 3 && displayed > 0) {
         audioEngine.playCountdownBeep(false);
       }
 
       if (remaining <= 0) {
         if (roundTimerRef.current) clearInterval(roundTimerRef.current);
+        roundTimerRef.current = null;
         handleGameOver();
       }
     }, 250);
+  };
+
+  // PAUSE / RESUME — stops the clock mid-round. While paused the game state is
+  // no longer PLAYING, so handleScoreEvent already rejects incoming baskets.
+  const pauseGame = () => {
+    if (gameStateRef.current !== GameState.PLAYING) return;
+    if (roundTimerRef.current) {
+      clearInterval(roundTimerRef.current);
+      roundTimerRef.current = null;
+    }
+    const remaining = Math.max(
+      0,
+      roundSecondsRef.current - (Date.now() - roundStartTimeRef.current) / 1000
+    );
+    pausedRemainingRef.current = remaining;
+    pauseStartedAtRef.current = Date.now();
+    setTimeRemaining(Math.ceil(remaining));
+    setGameState(GameState.PAUSED);
+    addPacketLog(`Round paused at 0:${String(Math.ceil(remaining)).padStart(2, '0')}`, 'SYS');
+  };
+
+  const resumeGame = () => {
+    if (gameStateRef.current !== GameState.PAUSED) return;
+    addPacketLog('Resuming — 3 second prep countdown.', 'SYS');
+
+    // Give the shooter the same 3-2-1 prep they get at tip-off. The clock only
+    // restarts once the countdown lands on BALL!
+    runCountdown(() => {
+      // Push the streak window forward by the whole paused span (prep included)
+      // so a long pause never silently kills a hot streak.
+      if (lastScoreTimeRef.current > 0) {
+        lastScoreTimeRef.current += Date.now() - pauseStartedAtRef.current;
+      }
+      setGameState(GameState.PLAYING);
+      startRoundTimer(pausedRemainingRef.current);
+      addPacketLog('Round resumed.', 'SYS');
+    });
+  };
+
+  const handleTogglePause = () => {
+    if (gameStateRef.current === GameState.PLAYING) pauseGame();
+    else if (gameStateRef.current === GameState.PAUSED) resumeGame();
   };
 
   // GAME OVER HANDLER
@@ -283,27 +342,6 @@ export default function App() {
     }
   };
 
-  // Connect Web Serial port
-  const handleConnectSerial = async () => {
-    if (!webSerialDriverRef.current) return;
-    const ok = await webSerialDriverRef.current.connect();
-    if (ok) {
-      addPacketLog('Arduino connected via Web Serial at ' + serialStatus.baudRate + ' baud', 'SYS');
-    }
-  };
-
-  const handleDisconnectSerial = async () => {
-    if (!webSerialDriverRef.current) return;
-    await webSerialDriverRef.current.disconnect();
-    addPacketLog('Arduino disconnected.', 'SYS');
-  };
-
-  const handleSendTestPacket = (packet: string) => {
-    if (webSerialDriverRef.current) {
-      webSerialDriverRef.current.parseIncomingLine(packet);
-    }
-  };
-
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-black select-none flex flex-col justify-between font-court">
       {/* 1. NBA STREET BLACKTOP COURT BACKGROUND */}
@@ -318,7 +356,6 @@ export default function App() {
         gameState={gameState}
         countdownValue={countdownValue}
         highScore={highScores[0] || null}
-        serialStatus={serialStatus}
         isMuted={isMuted}
         isFullscreen={isFullscreen}
         isCalibrating={isCalibrating}
@@ -329,9 +366,8 @@ export default function App() {
           setIsMuted(muted);
         }}
         onToggleFullscreen={toggleFullscreen}
+        onTogglePause={handleTogglePause}
         onToggleCalibration={() => setIsCalibrating(prev => !prev)}
-        onOpenSerialMonitor={() => setShowSerialModal(true)}
-        onOpenDocs={() => setShowDocsModal(true)}
         onSimulateScore={() => mockDriverRef.current?.simulateScore(2)}
       />
 
@@ -351,22 +387,8 @@ export default function App() {
           <span className="hidden sm:inline">Space / Click: <strong>Simulate Basket</strong></span>
           <span className="hidden md:inline">|</span>
           <span className="hidden md:inline">Key [C]: <strong>Align Hoop</strong></span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowDocsModal(true)}
-            className="text-cyan-400 hover:text-cyan-300 transition underline cursor-pointer"
-          >
-            Course Architecture Guide
-          </button>
-          <span>•</span>
-          <button
-            onClick={() => setShowSerialModal(true)}
-            className="text-amber-400 hover:text-amber-300 transition underline cursor-pointer"
-          >
-            Arduino USB Monitor
-          </button>
+          <span className="hidden md:inline">|</span>
+          <span className="hidden md:inline">Key [P]: <strong>Pause Clock</strong></span>
         </div>
       </footer>
 
@@ -380,26 +402,7 @@ export default function App() {
         />
       )}
 
-      {/* 6. SERIAL HARDWARE MONITOR & ARDUINO CODE MODAL */}
-      {showSerialModal && (
-        <SerialMonitorModal
-          status={serialStatus}
-          packetLogs={packetLogs}
-          onConnect={handleConnectSerial}
-          onDisconnect={handleDisconnectSerial}
-          onBaudRateChange={baud => webSerialDriverRef.current?.setBaudRate(baud)}
-          onSendTestPacket={handleSendTestPacket}
-          onClearLogs={() => setPacketLogs([])}
-          onClose={() => setShowSerialModal(false)}
-        />
-      )}
-
-      {/* 7. ARCHITECTURAL COURSE SPECIFICATION MODAL */}
-      {showDocsModal && (
-        <ArchitectureDocModal onClose={() => setShowDocsModal(false)} />
-      )}
-
-      {/* 8. GAME OVER & HIGH SCORE MODAL */}
+      {/* 6. GAME OVER & HIGH SCORE MODAL */}
       {gameState === GameState.GAMEOVER && (
         <GameOverModal
           score={score}

@@ -18,10 +18,10 @@ const DEFAULT_HIGH_SCORES: HighScoreRecord[] = [
 
 export const DEFAULT_CALIBRATION: HoopCalibration = {
   xPercent: 50,
-  yPercent: 36,
-  widthPx: 380,
+  yPercent: 25,
+  widthPx: 395,
   heightPx: 250,
-  rimDiameterPx: 120,
+  rimDiameterPx: 118,
   guideVisible: true,
   renderVirtualBoard: true,
   rotationDeg: 0,

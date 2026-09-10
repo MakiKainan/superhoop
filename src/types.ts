@@ -6,6 +6,7 @@ export enum GameState {
   IDLE = 'IDLE',               // Attract mode, waiting for player
   COUNTDOWN = 'COUNTDOWN',     // 3-2-1 get ready
   PLAYING = 'PLAYING',         // Active game round
+  PAUSED = 'PAUSED',           // Clock stopped mid-round, baskets ignored
   GAMEOVER = 'GAMEOVER',       // Time expired, high score entry
 }
 

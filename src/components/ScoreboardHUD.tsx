@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GameState, SerialStatus, HighScoreRecord } from '../types';
+import { GameState, HighScoreRecord } from '../types';
 import {
   Flame,
   Volume2,
@@ -8,12 +8,9 @@ import {
   Maximize,
   Minimize,
   Sliders,
-  Terminal,
-  BookOpen,
   Play,
+  Pause,
   RotateCcw,
-  Usb,
-  Cpu,
 } from 'lucide-react';
 
 interface ScoreboardHUDProps {
@@ -24,7 +21,6 @@ interface ScoreboardHUDProps {
   gameState: GameState;
   countdownValue: number;
   highScore: HighScoreRecord | null;
-  serialStatus: SerialStatus;
   isMuted: boolean;
   isFullscreen: boolean;
   isCalibrating: boolean;
@@ -32,9 +28,8 @@ interface ScoreboardHUDProps {
   onResetGame: () => void;
   onToggleMute: () => void;
   onToggleFullscreen: () => void;
+  onTogglePause: () => void;
   onToggleCalibration: () => void;
-  onOpenSerialMonitor: () => void;
-  onOpenDocs: () => void;
   onSimulateScore: () => void;
 }
 
@@ -46,7 +41,6 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
   gameState,
   countdownValue,
   highScore,
-  serialStatus,
   isMuted,
   isFullscreen,
   isCalibrating,
@@ -54,43 +48,21 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
   onResetGame,
   onToggleMute,
   onToggleFullscreen,
+  onTogglePause,
   onToggleCalibration,
-  onOpenSerialMonitor,
-  onOpenDocs,
   onSimulateScore,
 }) => {
+  const isPaused = gameState === GameState.PAUSED;
+  const isRoundActive = gameState === GameState.PLAYING || isPaused;
   const isFinalSeconds = timeRemaining <= 10 && gameState === GameState.PLAYING;
   const isOnFire = streak >= 3;
 
   return (
     <header className="relative w-full z-20 flex flex-col items-center select-none pt-3 px-4 md:px-8">
-      {/* 1. TOP UTILITY BAR (Projector setup, Audio, Serial connection status) */}
+      {/* 1. TOP UTILITY BAR (Projector setup, Audio) */}
       <div className="w-full max-w-7xl flex flex-wrap items-center justify-between gap-3 text-xs">
-        {/* Left: Hardware / Serial Connection Badge */}
+        {/* Left: Quick Simulation trigger pill for easy testing */}
         <div className="flex items-center gap-2">
-          <button
-            id="serial-status-btn"
-            onClick={onOpenSerialMonitor}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer font-mono font-bold ${
-              serialStatus.connected
-                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/90 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                : 'bg-neutral-900/80 border-neutral-700/60 text-neutral-300 hover:border-neutral-500'
-            }`}
-          >
-            {serialStatus.connected ? (
-              <>
-                <Usb className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span>ARDUINO: CONNECTED</span>
-              </>
-            ) : (
-              <>
-                <Cpu className="w-3.5 h-3.5 text-amber-400" />
-                <span>SENSOR: SIMULATOR (SPACEBAR)</span>
-              </>
-            )}
-          </button>
-
-          {/* Quick Simulation trigger pill for easy testing */}
           <button
             id="quick-simulate-btn"
             onClick={onSimulateScore}
@@ -101,7 +73,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
           </button>
         </div>
 
-        {/* Right: Quick Tools (Calibration, Sound, Docs, Fullscreen) */}
+        {/* Right: Quick Tools (Calibration, Sound, Fullscreen) */}
         <div className="flex items-center gap-2">
           <button
             id="calibration-toggle-btn"
@@ -115,26 +87,6 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>{isCalibrating ? 'CALIBRATING...' : 'CALIBRATE HOOP'}</span>
-          </button>
-
-          <button
-            id="docs-btn"
-            onClick={onOpenDocs}
-            className="flex items-center gap-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded-full font-mono font-medium transition cursor-pointer"
-            title="Embedded systems course architecture spec"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">ARCHITECTURE SPEC</span>
-            <span className="md:hidden">SPEC</span>
-          </button>
-
-          <button
-            id="serial-terminal-btn"
-            onClick={onOpenSerialMonitor}
-            className="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 rounded-full transition cursor-pointer"
-            title="Open Serial Packet Console & Arduino C++ Code"
-          >
-            <Terminal className="w-4 h-4" />
           </button>
 
           <button
@@ -166,9 +118,11 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
           </span>
           <div
             className={`text-4xl md:text-6xl font-score tracking-tighter transition-colors ${
-              isFinalSeconds
-                ? 'text-red-500 text-glow-red animate-pulse'
-                : 'text-emerald-400 text-glow-emerald'
+              isPaused
+                ? 'text-neutral-500'
+                : isFinalSeconds
+                  ? 'text-red-500 text-glow-red animate-pulse'
+                  : 'text-emerald-400 text-glow-emerald'
             }`}
           >
             0:{String(timeRemaining).padStart(2, '0')}
@@ -177,7 +131,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
           <div className="w-full max-w-[120px] h-1.5 bg-neutral-800 rounded-full overflow-hidden mt-1.5">
             <div
               className={`h-full transition-all duration-300 ${
-                isFinalSeconds ? 'bg-red-500' : 'bg-emerald-400'
+                isPaused ? 'bg-neutral-500' : isFinalSeconds ? 'bg-red-500' : 'bg-emerald-400'
               }`}
               style={{ width: `${(timeRemaining / roundDuration) * 100}%` }}
             />
@@ -230,9 +184,32 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
         </div>
       )}
 
-      {/* 3. IN-PLAY UTILITY BAR — only during PLAYING, kept small so it doesn't block the court */}
-      {gameState === GameState.PLAYING && (
-        <div className="mt-3">
+      {/* 3. IN-PLAY UTILITY BAR — during PLAYING and PAUSED, kept small so it doesn't block the court */}
+      {isRoundActive && (
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            id="pause-game-btn"
+            onClick={onTogglePause}
+            className={`flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 rounded-lg border backdrop-blur-md transition cursor-pointer ${
+              isPaused
+                ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-300 font-bold'
+                : 'bg-neutral-950/70 hover:bg-neutral-900 text-neutral-300 border-neutral-700'
+            }`}
+            title={isPaused ? 'Resume the clock [P]' : 'Pause the clock [P]'}
+          >
+            {isPaused ? (
+              <>
+                <Play className="w-3.5 h-3.5 fill-neutral-950" />
+                RESUME [P]
+              </>
+            ) : (
+              <>
+                <Pause className="w-3.5 h-3.5" />
+                PAUSE [P]
+              </>
+            )}
+          </button>
+
           <button
             id="reset-game-btn"
             onClick={onResetGame}
@@ -292,6 +269,43 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
         )}
       </AnimatePresence>
 
+      {/* 4b. PAUSED OVERLAY — clock frozen, baskets ignored until resumed */}
+      <AnimatePresence>
+        {isPaused && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="flex flex-col items-center gap-4 bg-neutral-950/90 ink-box rounded-2xl px-10 py-8 md:px-14 md:py-10 -rotate-2"
+            >
+              <span className="text-6xl md:text-8xl leading-none font-street text-cyan-300 tag-shadow-lg">
+                TIME OUT
+              </span>
+              <span className="font-street tracking-widest text-amber-300 text-lg md:text-2xl">
+                0:{String(timeRemaining).padStart(2, '0')} LEFT ON THE CLOCK
+              </span>
+              <button
+                id="resume-game-btn"
+                onClick={onTogglePause}
+                className="flex items-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-street tracking-widest px-8 py-3 md:px-12 md:py-4 rounded-xl text-2xl md:text-4xl ink-box transition transform hover:scale-105 active:scale-95 active:shadow-none cursor-pointer"
+              >
+                <Play className="w-6 h-6 md:w-8 md:h-8 fill-neutral-950" />
+                RESUME
+              </button>
+              <span className="text-[11px] font-mono text-neutral-400">
+                Press [P] to resume — baskets don't count while paused
+              </span>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 5. OVERLAY COUNTDOWN MODAL (3 - 2 - 1 - SHOOT!) */}
       <AnimatePresence>
         {gameState === GameState.COUNTDOWN && (
@@ -311,9 +325,6 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
             >
               {countdownValue > 0 ? countdownValue : 'BALL!'}
             </motion.div>
-            <p className="mt-4 text-3xl font-street tracking-widest text-cyan-300 ink tag-shadow rotate-1">
-              SHOW ME SOMETHING
-            </p>
           </motion.div>
         )}
       </AnimatePresence>
