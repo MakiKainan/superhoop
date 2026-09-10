@@ -1,5 +1,5 @@
 import React from 'react';
-import { HoopCalibration, CourtThemeId } from '../types';
+import { HoopCalibration } from '../types';
 import {
   Sliders,
   Check,
@@ -9,39 +9,24 @@ import {
   Move,
   Maximize2,
   Minimize2,
-  Sun,
-  Sunset,
-  Zap,
-  Trophy,
 } from 'lucide-react';
 
 interface CalibrationControlsProps {
   calibration: HoopCalibration;
-  currentTheme: CourtThemeId;
   onChange: (updated: HoopCalibration) => void;
-  onThemeChange: (theme: CourtThemeId) => void;
   onClose: () => void;
   onReset: () => void;
 }
 
 export const CalibrationControls: React.FC<CalibrationControlsProps> = ({
   calibration,
-  currentTheme,
   onChange,
-  onThemeChange,
   onClose,
   onReset,
 }) => {
   const update = (partial: Partial<HoopCalibration>) => {
     onChange({ ...calibration, ...partial });
   };
-
-  const themes: Array<{ id: CourtThemeId; name: string; icon: React.ReactNode }> = [
-    { id: 'sunset_cliff', name: 'Angels Gate Sunset', icon: <Sunset className="w-3.5 h-3.5 text-orange-400" /> },
-    { id: 'day_pacific', name: 'Pacific Vista Day', icon: <Sun className="w-3.5 h-3.5 text-sky-400" /> },
-    { id: 'cyber_neon', name: 'Cyberpunk Arcade', icon: <Zap className="w-3.5 h-3.5 text-cyan-400" /> },
-    { id: 'indoor_arena', name: 'Hardwood Arena', icon: <Trophy className="w-3.5 h-3.5 text-amber-400" /> },
-  ];
 
   return (
     <div
@@ -52,14 +37,14 @@ export const CalibrationControls: React.FC<CalibrationControlsProps> = ({
       <div className="flex items-center justify-between border-b border-neutral-800 pb-3 mb-3">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-amber-400" />
-          <h3 className="font-chakra font-bold text-sm text-neutral-100 uppercase tracking-wider">
+          <h3 className="font-street text-sm text-neutral-100 uppercase tracking-wider">
             Projector Hoop Alignment
           </h3>
         </div>
         <button
           id="close-calib-btn"
           onClick={onClose}
-          className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-chakra font-bold px-2.5 py-1 rounded-lg text-xs cursor-pointer"
+          className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-street px-2.5 py-1 rounded-lg text-xs cursor-pointer"
         >
           <Check className="w-3.5 h-3.5" />
           DONE
@@ -69,29 +54,6 @@ export const CalibrationControls: React.FC<CalibrationControlsProps> = ({
       <p className="text-neutral-400 text-[11px] mb-3 leading-relaxed">
         Align the projected hoop with your physical mini-hoop mounted on the wall or screen. Drag the hoop directly or use sliders below.
       </p>
-
-      {/* Court Theme Selector */}
-      <div className="mb-4">
-        <label className="block text-[11px] font-mono text-neutral-300 font-semibold mb-1.5 uppercase">
-          Court Visual Theme
-        </label>
-        <div className="grid grid-cols-2 gap-1.5">
-          {themes.map(t => (
-            <button
-              key={t.id}
-              onClick={() => onThemeChange(t.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-left border transition cursor-pointer ${
-                currentTheme === t.id
-                  ? 'bg-neutral-800 border-amber-400/80 text-amber-300 font-bold'
-                  : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 text-neutral-400'
-              }`}
-            >
-              {t.icon}
-              <span className="truncate text-[11px]">{t.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Sliders Grid */}
       <div className="space-y-3">

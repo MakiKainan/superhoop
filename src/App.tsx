@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   GameState,
-  CourtThemeId,
   HoopCalibration,
   HighScoreRecord,
   SerialStatus,
@@ -34,8 +33,7 @@ export default function App() {
   const [countdownValue, setCountdownValue] = useState(3);
   const [scoreTrigger, setScoreTrigger] = useState<{ id: number; points: number; streak: number } | null>(null);
 
-  // 2. PROJECTOR & VISUAL THEME STATE
-  const [themeId, setThemeId] = useState<CourtThemeId>('sunset_cliff'); // Default to user's uploaded Sunset cliff court!
+  // 2. PROJECTOR STATE
   const [calibration, setCalibration] = useState<HoopCalibration>(() => ScoreStorageService.loadCalibration());
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -307,9 +305,9 @@ export default function App() {
   };
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-black select-none flex flex-col justify-between font-sans-clean">
-      {/* 1. IMMERSIVE COURT BACKGROUND (Sunset Ocean, Daytime Coast, Cyber Neon, Arena) */}
-      <CourtBackground themeId={themeId} />
+    <main className="relative w-screen h-screen overflow-hidden bg-black select-none flex flex-col justify-between font-court">
+      {/* 1. NBA STREET BLACKTOP COURT BACKGROUND */}
+      <CourtBackground />
 
       {/* 2. PROJECTOR SCOREBOARD HUD */}
       <ScoreboardHUD
@@ -350,8 +348,6 @@ export default function App() {
       {/* 4. BOTTOM PROJECTOR HINT BAR */}
       <footer className="relative w-full z-20 px-6 py-2 bg-neutral-950/70 backdrop-blur-xs border-t border-neutral-800/60 flex flex-wrap items-center justify-between text-[11px] font-mono text-neutral-400">
         <div className="flex items-center gap-4">
-          <span>Court: <strong className="text-amber-400 capitalize">{themeId.replace('_', ' ')}</strong></span>
-          <span className="hidden sm:inline">|</span>
           <span className="hidden sm:inline">Space / Click: <strong>Simulate Basket</strong></span>
           <span className="hidden md:inline">|</span>
           <span className="hidden md:inline">Key [C]: <strong>Align Hoop</strong></span>
@@ -378,9 +374,7 @@ export default function App() {
       {isCalibrating && (
         <CalibrationControls
           calibration={calibration}
-          currentTheme={themeId}
           onChange={handleCalibrationChange}
-          onThemeChange={setThemeId}
           onClose={() => setIsCalibrating(false)}
           onReset={handleResetCalibration}
         />

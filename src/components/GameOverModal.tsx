@@ -55,7 +55,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 select-none animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center text-center">
         {/* Header Ribbon */}
-        <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 font-chakra font-black text-sm tracking-widest uppercase mb-2">
+        <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 font-street text-sm tracking-widest uppercase mb-2">
           <span>TIME EXPIRED</span>
         </div>
 
@@ -63,7 +63,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         <h2 className="text-xl font-mono text-neutral-400 font-semibold uppercase tracking-wider">
           FINAL SCORE
         </h2>
-        <div className="text-6xl md:text-7xl font-orbitron font-black text-amber-400 text-glow-amber my-1 tracking-tighter">
+        <div className="text-6xl md:text-7xl font-score text-amber-400 text-glow-amber my-1 tracking-tighter">
           {score}
         </div>
 
@@ -85,7 +85,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         {/* High score name entry if applicable */}
         {isNewHighScore && !saved && (
           <form onSubmit={handleSubmit} className="w-full my-3 p-4 bg-amber-950/30 border border-amber-500/50 rounded-2xl flex flex-col items-center">
-            <div className="flex items-center gap-1.5 text-amber-300 font-chakra font-black text-sm tracking-wider uppercase mb-2">
+            <div className="flex items-center gap-1.5 text-amber-300 font-street text-sm tracking-wider uppercase mb-2">
               <Award className="w-4 h-4 text-amber-400" />
               NEW TOP 5 RECORD! ENTER INITIALS:
             </div>
@@ -96,11 +96,11 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
                 value={initials}
                 onChange={e => setInitials(e.target.value.toUpperCase())}
                 autoFocus
-                className="w-28 text-center text-3xl font-orbitron font-black text-amber-400 bg-black border-2 border-amber-400 rounded-xl py-1 focus:outline-none tracking-widest uppercase shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                className="w-28 text-center text-3xl font-score text-amber-400 bg-black border-2 border-amber-400 rounded-xl py-1 focus:outline-none tracking-widest uppercase shadow-[0_0_15px_rgba(245,158,11,0.5)]"
               />
               <button
                 type="submit"
-                className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-chakra font-black px-4 py-2.5 rounded-xl text-sm transition cursor-pointer"
+                className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-street px-4 py-2.5 rounded-xl text-sm transition cursor-pointer"
               >
                 SAVE RECORD
               </button>
@@ -110,7 +110,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
         {/* Top 5 Leaderboard Table */}
         <div className="w-full my-3 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-3 text-left">
-          <div className="flex items-center justify-between font-chakra font-bold text-xs text-neutral-300 uppercase tracking-wider mb-2 px-2">
+          <div className="flex items-center justify-between font-street text-xs text-neutral-300 uppercase tracking-wider mb-2 px-2">
             <span className="flex items-center gap-1">
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
               HALL OF FAME (TOP 5)
@@ -137,11 +137,11 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <span className="w-4 font-bold text-neutral-500">#{index + 1}</span>
-                    <span className="font-orbitron font-black tracking-wider text-sm">{rec.initials}</span>
+                    <span className="font-score tracking-wider text-sm">{rec.initials}</span>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-[11px] text-neutral-500">{rec.date}</span>
-                    <span className="font-orbitron font-black text-amber-400 text-sm w-10 text-right">
+                    <span className="font-score text-amber-400 text-sm w-10 text-right">
                       {rec.score}
                     </span>
                   </div>
@@ -154,7 +154,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         {/* Play Again Action */}
         <button
           onClick={onPlayAgain}
-          className="mt-2 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 font-chakra font-black tracking-wider text-base py-3 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.5)] transition transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          className="mt-2 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 font-street tracking-wider text-base py-3 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.5)] transition transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
         >
           <Play className="w-5 h-5 fill-neutral-950" />
           PLAY ANOTHER ROUND

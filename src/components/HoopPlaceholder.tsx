@@ -179,7 +179,7 @@ export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
           <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-white/10 to-transparent pointer-events-none" />
 
           {/* Header Brand / School / Arcade text */}
-          <div className="w-full flex justify-between items-center text-[10px] font-chakra font-bold tracking-wider text-slate-300/80 px-2">
+          <div className="w-full flex justify-between items-center text-[10px] font-street tracking-wider text-slate-300/80 px-2">
             <span>REGULATION MINI</span>
             <span>ARCADE PRO</span>
           </div>
@@ -310,7 +310,7 @@ export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
               }}
               transition={{ duration: 1.1, ease: 'easeOut', times: [0, 0.15, 0.75, 1] }}
               onAnimationComplete={() => handleFloatingScoreDone(badge.id)}
-              className={`absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-orbitron font-black tracking-wider px-3 py-1 rounded-full shadow-2xl flex items-center gap-1.5 border ${
+              className={`absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-score tracking-wider px-3 py-1 rounded-full shadow-2xl flex items-center gap-1.5 border ${
                 badge.streak >= 3
                   ? 'bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 text-white border-yellow-300 text-2xl drop-shadow-[0_0_20px_rgba(239,68,68,0.9)]'
                   : 'bg-amber-500 text-black border-amber-300 text-xl drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]'

@@ -9,18 +9,6 @@ export enum GameState {
   GAMEOVER = 'GAMEOVER',       // Time expired, high score entry
 }
 
-export type CourtThemeId = 'sunset_cliff' | 'day_pacific' | 'cyber_neon' | 'indoor_arena';
-
-export interface CourtTheme {
-  id: CourtThemeId;
-  name: string;
-  description: string;
-  skyGradient: string;
-  courtColor: string;
-  rimColor: string;
-  netColor: string;
-}
-
 export interface HoopCalibration {
   xPercent: number;        // Center X percentage (0-100%)
   yPercent: number;        // Center Y percentage (0-100%)

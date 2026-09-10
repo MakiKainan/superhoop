@@ -36,7 +36,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-chakra font-bold text-neutral-100 uppercase tracking-wide">
+              <h2 className="text-lg font-street text-neutral-100 uppercase tracking-wide">
                 Embedded Systems & Software Architecture Spec
               </h2>
               <p className="text-xs font-mono text-cyan-400">
@@ -125,7 +125,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
           {/* SECTION 1: TECH STACK */}
           {activeSection === 'STACK' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 1. Recommended Tech Stack Comparison
               </h3>
               <p className="text-neutral-300">
@@ -138,7 +138,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
                 <div className="p-4 rounded-2xl bg-emerald-950/30 border-2 border-emerald-500/50 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-chakra font-bold text-emerald-400 text-base">Option A: Web Serial + React (Our Choice)</span>
+                      <span className="font-street text-emerald-400 text-base">Option A: Web Serial + React (Our Choice)</span>
                       <span className="text-[10px] font-mono bg-emerald-500 text-neutral-950 font-black px-2 py-0.5 rounded-full">
                         RECOMMENDED
                       </span>
@@ -160,7 +160,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
                 <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-chakra font-bold text-neutral-200 text-base">Option B: Python + Pygame</span>
+                      <span className="font-street text-neutral-200 text-base">Option B: Python + Pygame</span>
                       <span className="text-[10px] font-mono bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full">
                         TRADITIONAL
                       </span>
@@ -182,7 +182,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
                 <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-chakra font-bold text-neutral-200 text-base">Option C: Electron + SerialPort</span>
+                      <span className="font-street text-neutral-200 text-base">Option C: Electron + SerialPort</span>
                       <span className="text-[10px] font-mono bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full">
                         HEAVYWEIGHT
                       </span>
@@ -210,7 +210,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
           {/* SECTION 2: SEPARATION OF CONCERNS */}
           {activeSection === 'MODULES' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 2. Module Architecture & Clean Separation of Concerns
               </h3>
               <p className="text-neutral-300">
@@ -246,25 +246,25 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
-                  <h4 className="font-chakra font-bold text-amber-300 text-sm mb-1">Module 1: Hardware Abstraction Layer (HAL)</h4>
+                  <h4 className="font-street text-amber-300 text-sm mb-1">Module 1: Hardware Abstraction Layer (HAL)</h4>
                   <p className="text-neutral-400">
                     Exposes an identical `onScore(callback)` event listener regardless of whether scores arrive from a physical USB Arduino or a keyboard spacebar press. The rest of the app never knows which one is active.
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
-                  <h4 className="font-chakra font-bold text-amber-300 text-sm mb-1">Module 2: Game State Manager</h4>
+                  <h4 className="font-street text-amber-300 text-sm mb-1">Module 2: Game State Manager</h4>
                   <p className="text-neutral-400">
                     A pure state machine governing game round progression: IDLE (Attract) ➔ COUNTDOWN (3s prep) ➔ PLAYING (active countdown) ➔ GAMEOVER (final whistle). Handles points math, multiplier streaks, and high score checks.
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
-                  <h4 className="font-chakra font-bold text-amber-300 text-sm mb-1">Module 3: Projector UI & Calibration Renderer</h4>
+                  <h4 className="font-street text-amber-300 text-sm mb-1">Module 3: Projector UI & Calibration Renderer</h4>
                   <p className="text-neutral-400">
                     Displays high-contrast graphics suitable for ambient projector light. Provides draggable calibration coordinates (X, Y, Scale) to align perfectly with the physical hoop on the wall.
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
-                  <h4 className="font-chakra font-bold text-amber-300 text-sm mb-1">Module 4: Audio & Feedback Engine</h4>
+                  <h4 className="font-street text-amber-300 text-sm mb-1">Module 4: Audio & Feedback Engine</h4>
                   <p className="text-neutral-400">
                     Procedural audio synthesizers (swish, buzzer, chime, crowd) that trigger in response to state transitions without disk I/O latency.
                   </p>
@@ -276,7 +276,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
           {/* SECTION 3: SERIAL PROTOCOL */}
           {activeSection === 'PROTOCOL' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 3. Arduino ⇄ Laptop Serial Protocol Specification
               </h3>
               <p className="text-neutral-300">
@@ -319,7 +319,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
               </div>
 
               <div className="space-y-2 text-xs">
-                <h4 className="font-chakra font-bold text-neutral-200 uppercase">Parsing & Validation Algorithm on Laptop:</h4>
+                <h4 className="font-street text-neutral-200 uppercase">Parsing & Validation Algorithm on Laptop:</h4>
                 <ol className="list-decimal list-inside space-y-1 text-neutral-400">
                   <li>Accumulate incoming bytes into a line buffer until `\n` is encountered.</li>
                   <li>Trim whitespace and carriage returns (`\r`).</li>
@@ -334,7 +334,7 @@ export const ArchitectureDocModal: React.FC<ArchitectureDocModalProps> = ({ onCl
           {/* SECTION 4: MOCK SWAP */}
           {activeSection === 'MOCK_SWAP' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 4. Sensor Driver Abstraction (Mock vs Real Hardware)
               </h3>
               <p className="text-neutral-300">
@@ -395,7 +395,7 @@ driver.onScore(event => {
           {/* SECTION 5: HIGH SCORES */}
           {activeSection === 'STORAGE' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 5. High Scores Storage Strategy
               </h3>
               <p className="text-neutral-300">
@@ -425,7 +425,7 @@ driver.onScore(event => {
                 </div>
 
                 <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800 space-y-2">
-                  <h4 className="font-chakra font-bold text-neutral-200 text-sm">Persistence Lifecycle:</h4>
+                  <h4 className="font-street text-neutral-200 text-sm">Persistence Lifecycle:</h4>
                   <ul className="list-disc list-inside text-neutral-400 space-y-1">
                     <li><strong>Storage Location:</strong> Browser `localStorage` key (`ARCADE_HOOP_HIGHSCORES_V1`) or local JSON file.</li>
                     <li><strong>When Reads Occur:</strong> Once on app startup. If empty or corrupted, fallback to seed array of classic records.</li>
@@ -440,7 +440,7 @@ driver.onScore(event => {
           {/* SECTION 6: EDGE CASES */}
           {activeSection === 'EDGE_CASES' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 6. Critical Failure Points & Embedded Edge Cases
               </h3>
               <p className="text-neutral-300">
@@ -449,7 +449,7 @@ driver.onScore(event => {
 
               <div className="space-y-3 text-xs">
                 <div className="p-3 rounded-xl bg-red-950/20 border border-red-800/40">
-                  <h4 className="font-chakra font-bold text-red-400 text-sm mb-1">
+                  <h4 className="font-street text-red-400 text-sm mb-1">
                     1. Double Counting from Ball Bounce & Net Ripple
                   </h4>
                   <p className="text-neutral-300 mb-1">
@@ -461,7 +461,7 @@ driver.onScore(event => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-red-950/20 border border-red-800/40">
-                  <h4 className="font-chakra font-bold text-red-400 text-sm mb-1">
+                  <h4 className="font-street text-red-400 text-sm mb-1">
                     2. Ambient Sunlight & Projector Light Flooding IR Sensor
                   </h4>
                   <p className="text-neutral-300 mb-1">
@@ -473,7 +473,7 @@ driver.onScore(event => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-red-950/20 border border-red-800/40">
-                  <h4 className="font-chakra font-bold text-red-400 text-sm mb-1">
+                  <h4 className="font-street text-red-400 text-sm mb-1">
                     3. USB Cable Disconnection / Serial Port Dropping
                   </h4>
                   <p className="text-neutral-300 mb-1">
@@ -485,7 +485,7 @@ driver.onScore(event => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-red-950/20 border border-red-800/40">
-                  <h4 className="font-chakra font-bold text-red-400 text-sm mb-1">
+                  <h4 className="font-street text-red-400 text-sm mb-1">
                     4. Timer Race Conditions & JavaScript Drift
                   </h4>
                   <p className="text-neutral-300 mb-1">
@@ -502,7 +502,7 @@ driver.onScore(event => {
           {/* SECTION 7: STRUCTURE */}
           {activeSection === 'STRUCTURE' && (
             <div className="space-y-4">
-              <h3 className="text-xl font-chakra font-bold text-amber-400 uppercase tracking-wide">
+              <h3 className="text-xl font-street text-amber-400 uppercase tracking-wide">
                 7. Suggested Project Folder Structure
               </h3>
               <p className="text-neutral-300">
@@ -550,7 +550,7 @@ driver.onScore(event => {
           <span>Project: Arcade Mini Basketball Hoop Machine</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-chakra font-bold cursor-pointer transition"
+            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-street cursor-pointer transition"
           >
             RETURN TO GAME
           </button>

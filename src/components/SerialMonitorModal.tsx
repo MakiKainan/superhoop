@@ -114,7 +114,7 @@ export const SerialMonitorModal: React.FC<SerialMonitorModalProps> = ({
               <Usb className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-chakra font-bold text-neutral-100 uppercase tracking-wide">
+              <h2 className="text-base font-street text-neutral-100 uppercase tracking-wide">
                 Hardware & Serial Monitor
               </h2>
               <p className="text-xs font-mono text-neutral-400">

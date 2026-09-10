@@ -160,12 +160,12 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
       {/* 2. TIME (left) + SCORE (right) — standalone pills, no shared rectangle */}
       <div className="w-full max-w-4xl mt-3 flex items-start justify-between gap-3">
         {/* TIME — LEFT */}
-        <div className="flex flex-col items-center bg-neutral-950/85 backdrop-blur-md border border-neutral-800/80 rounded-2xl px-4 py-2 md:px-8 md:py-3 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-          <span className="text-xs md:text-sm font-mono tracking-widest text-neutral-400 uppercase font-semibold">
+        <div className="flex flex-col items-center bg-neutral-950/90 backdrop-blur-md ink-box rounded-xl px-4 py-2 md:px-8 md:py-3 -rotate-1">
+          <span className="text-sm md:text-base font-street tracking-widest text-amber-300 uppercase">
             TIME
           </span>
           <div
-            className={`text-4xl md:text-6xl font-orbitron font-black tracking-tighter transition-colors ${
+            className={`text-4xl md:text-6xl font-score tracking-tighter transition-colors ${
               isFinalSeconds
                 ? 'text-red-500 text-glow-red animate-pulse'
                 : 'text-emerald-400 text-glow-emerald'
@@ -185,8 +185,8 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
         </div>
 
         {/* SCORE — RIGHT */}
-        <div className="flex flex-col items-center bg-neutral-950/85 backdrop-blur-md border border-neutral-800/80 rounded-2xl px-4 py-2 md:px-8 md:py-3 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-          <span className="text-xs md:text-sm font-mono tracking-widest text-neutral-400 uppercase font-semibold">
+        <div className="flex flex-col items-center bg-neutral-950/90 backdrop-blur-md ink-box rounded-xl px-4 py-2 md:px-8 md:py-3 rotate-1">
+          <span className="text-sm md:text-base font-street tracking-widest text-amber-300 uppercase">
             SCORE
           </span>
           <motion.div
@@ -194,7 +194,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
             initial={{ scale: 1.25 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.15 }}
-            className="text-4xl md:text-6xl font-orbitron font-black text-amber-400 text-glow-amber tracking-tighter"
+            className="text-4xl md:text-6xl font-score text-amber-400 text-glow-amber tracking-tighter"
           >
             {String(score).padStart(2, '0')}
           </motion.div>
@@ -205,7 +205,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
                 initial={{ scale: 0.8 }}
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={{ repeat: Infinity, duration: 1 }}
-                className="flex items-center gap-1 text-[11px] font-chakra font-black tracking-wider text-red-400 bg-red-950/80 border border-red-500/60 px-2 py-0.5 rounded-full"
+                className="flex items-center gap-1 text-[11px] font-street tracking-wider text-red-400 bg-red-950/80 border border-red-500/60 px-2 py-0.5 rounded-full"
               >
                 <Flame className="w-3 h-3 fill-red-400 animate-bounce" />
                 <span>ON FIRE x{streak}!</span>
@@ -217,15 +217,15 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
 
       {/* HIGH SCORE — only shown before a round starts, hidden during play/countdown/gameover */}
       {gameState === GameState.IDLE && (
-        <div className="mt-3 flex items-center gap-2 bg-neutral-950/70 backdrop-blur-md border border-cyan-500/30 rounded-full px-4 py-1.5">
-          <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase font-semibold">
+        <div className="mt-3 flex items-center gap-2 bg-neutral-950/85 backdrop-blur-md ink-box rounded-lg px-4 py-1.5 -rotate-1">
+          <span className="text-sm font-street tracking-widest text-neutral-300 uppercase">
             RECORD TO BEAT
           </span>
-          <span className="text-lg font-orbitron font-black text-cyan-400 text-glow-cyan">
+          <span className="text-2xl font-score text-cyan-400 text-glow-cyan">
             {highScore ? String(highScore.score).padStart(2, '0') : '62'}
           </span>
-          <span className="text-[11px] font-mono text-neutral-400">
-            <strong className="text-cyan-300">{highScore ? highScore.initials : 'KOB'}</strong>
+          <span className="text-base font-street text-purple-400 tracking-wider">
+            {highScore ? highScore.initials : 'KOB'}
           </span>
         </div>
       )}
@@ -245,17 +245,17 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
       )}
 
       {gameState === GameState.GAMEOVER && (
-        <div className="w-full max-w-4xl mt-3 bg-neutral-950/85 backdrop-blur-md border border-neutral-800/80 rounded-2xl p-3 md:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.8)] flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs md:text-sm font-chakra font-bold tracking-wide text-red-400 font-mono">
-            FINAL SCORE RECORDED!
+        <div className="w-full max-w-4xl mt-3 bg-neutral-950/90 backdrop-blur-md ink-box rounded-xl p-3 md:p-4 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-lg md:text-xl font-street tracking-wide text-red-400">
+            THAT'S GAME!
           </span>
           <button
             id="play-again-btn"
             onClick={onStartGame}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-chakra font-black tracking-wider px-5 py-2 rounded-xl text-sm md:text-base shadow-[0_0_20px_rgba(16,185,129,0.5)] transition transform hover:scale-105 cursor-pointer"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-street tracking-wider px-5 py-2 rounded-lg text-lg md:text-xl ink-box transition transform hover:scale-105 active:shadow-none cursor-pointer"
           >
             <Play className="w-4 h-4 fill-neutral-950" />
-            PLAY AGAIN
+            RUN IT BACK
           </button>
         </div>
       )}
@@ -273,19 +273,19 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="pointer-events-auto flex flex-col items-center gap-5 bg-neutral-950/85 backdrop-blur-md border border-neutral-800/80 rounded-3xl px-10 py-8 md:px-16 md:py-12 shadow-[0_20px_60px_rgba(0,0,0,0.85)]"
+              className="pointer-events-auto flex flex-col items-center gap-5 bg-neutral-950/90 backdrop-blur-md ink-box rounded-2xl px-10 py-8 md:px-16 md:py-12 -rotate-2"
             >
-              <span className="text-amber-300 flex items-center gap-2 font-chakra font-bold tracking-wide text-sm md:text-lg text-center">
+              <span className="text-cyan-300 flex items-center gap-2 font-street tracking-wide text-lg md:text-2xl text-center">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-                INSERT COIN / PRESS START TO BEGIN 60S ROUND
+                CHECK BALL — 60 SECONDS ON THE CLOCK
               </span>
               <button
                 id="start-game-btn"
                 onClick={onStartGame}
-                className="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-neutral-950 font-chakra font-black tracking-widest px-10 py-4 md:px-16 md:py-6 rounded-2xl text-xl md:text-3xl shadow-[0_0_40px_rgba(245,158,11,0.6)] transition transform hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
+                className="flex items-center gap-3 bg-[#f97316] hover:bg-[#fb923c] text-neutral-950 font-street tracking-widest px-10 py-4 md:px-16 md:py-6 rounded-xl text-3xl md:text-5xl ink-box transition transform hover:scale-105 active:scale-95 active:shadow-none cursor-pointer"
               >
-                <Play className="w-6 h-6 md:w-8 md:h-8 fill-neutral-950" />
-                START GAME
+                <Play className="w-7 h-7 md:w-9 md:h-9 fill-neutral-950" />
+                BALL UP
               </button>
             </motion.div>
           </motion.div>
@@ -307,12 +307,12 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
               transition={{ duration: 0.45, ease: 'easeOut' }}
-              className="text-8xl md:text-9xl font-orbitron font-black text-amber-400 text-glow-amber drop-shadow-[0_0_50px_rgba(245,158,11,1)]"
+              className="text-[10rem] md:text-[14rem] leading-none font-street text-amber-400 ink-thick tag-shadow-lg -rotate-3"
             >
-              {countdownValue > 0 ? countdownValue : 'SHOOT!'}
+              {countdownValue > 0 ? countdownValue : 'BALL!'}
             </motion.div>
-            <p className="mt-4 text-xl font-chakra font-bold tracking-widest text-neutral-300 uppercase">
-              GET READY!
+            <p className="mt-4 text-3xl font-street tracking-widest text-cyan-300 ink tag-shadow rotate-1">
+              SHOW ME SOMETHING
             </p>
           </motion.div>
         )}
