@@ -37,12 +37,14 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           spread: 80,
           origin: { y: 0.6 },
           colors: ['#f59e0b', '#ef4444', '#10b981', '#06b6d4'],
+          disableForReducedMotion: true,
         });
       } catch {
         // Ignore
       }
     }
-  }, [isNewHighScore, score]);
+    return () => confetti.reset();
+  }, [score]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +55,12 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 select-none animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center text-center">
+      <div role="dialog" aria-modal="true" aria-label="Round results" className="relative w-full max-w-lg max-h-[95vh] overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center text-center">
         {/* Header Ribbon */}
         <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 font-street text-sm tracking-widest uppercase mb-2">
           <span>TIME EXPIRED</span>
         </div>
+
 
         {/* Big Final Score */}
         <h2 className="text-xl font-mono text-neutral-400 font-semibold uppercase tracking-wider">
@@ -92,6 +95,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             <div className="flex items-center gap-2">
               <input
                 type="text"
+                aria-label="Leaderboard initials"
                 maxLength={3}
                 value={initials}
                 onChange={e => setInitials(e.target.value.toUpperCase())}

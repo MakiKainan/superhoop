@@ -1,3 +1,5 @@
+> Historical project context. For the current simplified implementation, read [README](README.md) and [the code guide](docs/architecture-review.md).
+
 # Project Handoff: Arcade Mini Basketball Machine
 
 ## Context

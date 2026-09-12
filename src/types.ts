@@ -30,14 +30,18 @@ export interface HighScoreRecord {
   accuracyStreak?: number;
 }
 
+export type SensorSource = 'SERIAL_ARDUINO' | 'SIMULATOR_KEYBOARD' | 'SIMULATOR_UI';
+
 export interface SensorEvent {
+  /** Stable across retries. Use device boot ID + sequence for real transports. */
+  id: string;
+  /** Host monotonic time (performance.now), never device time or Date.now. */
   timestamp: number;
   rawPayload: string;
   points: number;
-  source: 'SERIAL_ARDUINO' | 'SIMULATOR_KEYBOARD' | 'SIMULATOR_UI';
+  source: SensorSource;
 }
 
-export type InputMode = 'SIMULATOR' | 'WEB_SERIAL';
 
 export interface SerialStatus {
   supported: boolean;

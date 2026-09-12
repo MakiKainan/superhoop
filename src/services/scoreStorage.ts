@@ -19,9 +19,10 @@ const DEFAULT_HIGH_SCORES: HighScoreRecord[] = [
 export const DEFAULT_CALIBRATION: HoopCalibration = {
   xPercent: 50,
   yPercent: 25,
-  widthPx: 395,
-  heightPx: 250,
-  rimDiameterPx: 118,
+  // Compact proportions: visible on a laptop and narrow enough for a small screen.
+  widthPx: 240,
+  heightPx: 150,
+  rimDiameterPx: 64,
   guideVisible: true,
   renderVirtualBoard: true,
   rotationDeg: 0,
@@ -32,20 +33,23 @@ export class ScoreStorageService {
    * Load top high scores from localStorage, or return default seeded leaderboard
    */
   public static loadHighScores(): HighScoreRecord[] {
+    const defaults = [...DEFAULT_HIGH_SCORES];
     try {
       const raw = localStorage.getItem(STORAGE_KEY_SCORES);
       if (!raw) {
-        this.saveHighScores(DEFAULT_HIGH_SCORES);
-        return DEFAULT_HIGH_SCORES;
+        return defaults;
       }
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.sort((a, b) => b.score - a.score).slice(0, 5);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => item && typeof item.id === 'string' && typeof item.initials === 'string' &&
+          Number.isSafeInteger(item.score) && item.score >= 0 && typeof item.date === 'string' &&
+          Number.isFinite(item.durationSeconds) && item.durationSeconds > 0)
+          .sort((a, b) => b.score - a.score).slice(0, 5);
       }
     } catch (e) {
       console.warn('Failed to parse high scores from localStorage, resetting:', e);
     }
-    return DEFAULT_HIGH_SCORES;
+    return defaults;
   }
 
   /**
@@ -53,7 +57,7 @@ export class ScoreStorageService {
    */
   public static saveHighScores(scores: HighScoreRecord[]): void {
     try {
-      const top5 = scores.sort((a, b) => b.score - a.score).slice(0, 5);
+      const top5 = [...scores].sort((a, b) => b.score - a.score).slice(0, 5);
       localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(top5));
     } catch (e) {
       console.error('Failed to save high scores to localStorage:', e);
@@ -145,7 +149,17 @@ export class ScoreStorageService {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_CALIB);
       if (raw) {
-        return { ...DEFAULT_CALIBRATION, ...JSON.parse(raw) };
+        const saved = { ...DEFAULT_CALIBRATION, ...JSON.parse(raw) };
+        // Upgrade only the old standard size; preserve manually adjusted dimensions.
+        const previousStandard =
+          (saved.widthPx === 395 && saved.heightPx === 250 && saved.rimDiameterPx === 118) ||
+          (saved.widthPx === 320 && saved.heightPx === 200 && saved.rimDiameterPx === 100);
+        if (previousStandard) {
+          saved.widthPx = DEFAULT_CALIBRATION.widthPx;
+          saved.heightPx = DEFAULT_CALIBRATION.heightPx;
+          saved.rimDiameterPx = DEFAULT_CALIBRATION.rimDiameterPx;
+        }
+        return saved;
       }
     } catch {
       // Fallback

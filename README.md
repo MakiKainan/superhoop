@@ -1,104 +1,67 @@
-# 🏀 Arcade Hoop Projector
+# Smart Basketball Hoop — current step
 
-An arcade-style mini basketball machine, built as an Embedded Systems course
-project. A React frontend projects a scoreboard, timer, and virtual
-backboard/hoop over a physical mini hoop, and reads made-basket events from
-an Arduino over USB serial — or from a keyboard, while the hardware isn't
-built yet.
+We are making the existing game reliable before adding hardware or more features.
 
-## How it works
+## What the app does now
 
-- **Frontend/game logic first, hardware second.** All game state, scoring,
-  and timing live on the laptop. The Arduino's only job is to detect a ball
-  passing through the rim and send a line of text over serial.
-- **Two interchangeable sensor drivers**, both behind the same interface
-  (`src/services/hardwareAbstraction.ts`):
-  - `MockSensorDriver` — Space bar / click simulates a made basket. Used for
-    all development and testing before the hardware exists.
-  - `WebSerialDriver` — reads real Arduino input directly in the browser via
-    the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API)
-    (`navigator.serial`). No backend/Node process needed — Chrome or Edge
-    talks to the Arduino directly.
-- **Projector calibration.** A virtual backboard/rim overlay can be resized,
-  repositioned, and rotated to line up with the physical hoop once it's
-  projected on a wall.
-- **Local-only persistence.** Top-5 high scores and calibration settings are
-  saved to `localStorage`. No database, no network, no cloud sync.
+- One 60-second game, with a three-second preparation countdown.
+- Space, S, or clicking the rim simulates a made basket.
+- A normal basket adds 2 points. The existing streak bonus adds 1 extra point from the third basket onward, if baskets are less than 3 seconds apart.
+- P pauses or resumes. The clock and streak timing stop while paused. Resume gives another three-second countdown.
+- The original high scores, calibration, sound and fullscreen controls remain.
 
-## Getting started
+There is no mode selector, shot clock, miss/rim simulator, burst button, scheduled simulation or USB connection panel. The existing serial adapter is kept in the source for a later step, but the app only starts the mock input.
 
-```bash
-npm install
+## Run the app
+
+From the project folder:
+
+```sh
+npm ci
 npm run dev
 ```
 
-Open the printed local URL in **Chrome or Edge** (Web Serial API support is
-required for real Arduino input — the keyboard/mock sensor works in any
-browser).
+Open the local URL printed in the terminal. You only need `npm ci` for initial setup or after dependencies change.
 
-Other scripts:
+## Test it yourself
 
-```bash
-npm run build     # production build
-npm run preview   # preview the production build
-npm run lint      # type-check with tsc
+1. Click **BALL UP**. Check that 3, 2, 1 appears before the 60-second game starts.
+2. Make three baskets quickly using Space or the rim. The scores should be **2, 4, 7**.
+3. Wait at least 3 seconds, then make another basket. It should add **2**, because the streak has expired.
+4. Press **P**. Note the score and time. Press Space while paused: neither should change.
+5. Press **P** again. After the preparation countdown, the game should continue with the saved time and score.
+6. Click **END ROUND**, then start again. The score, basket count and streak should start fresh.
+7. Let a round reach zero. More Space presses must not change the final score.
+
+Space activates a focused button normally. To use it as a basket key, click an empty part of the court first, or use **S**. Holding a key does not repeatedly score.
+
+## Check the code
+
+```sh
+npm test
+npm run lint
+npm run build
 ```
 
-## Controls
+- `test`: checks scoring and timing with a controlled clock, without waiting for real rounds.
+- `lint`: checks TypeScript types.
+- `build`: makes the production version.
 
-| Key / Action     | Effect                                  |
-|-------------------|------------------------------------------|
-| `Space` / click rim | Simulate a made basket (mock sensor)    |
-| `C`               | Toggle hoop/projector calibration mode  |
-| `M`               | Mute / unmute audio                     |
-| `F`               | Toggle fullscreen (for projector setups)|
-| `D`               | Open the architecture spec doc          |
-| `Esc`             | Close any open modal / exit calibration |
+The optional Phathouse font files are not included, so the build warns about them and uses fallback fonts. See [font notes](public/fonts/README.md).
 
-## Arduino → laptop protocol
+## Understand the change
 
-The Arduino only needs to send one line of text per made basket over serial
-(default baud rate `115200`, configurable in the Serial Monitor panel in-app).
-Recognized line formats (see `WebSerialDriver.parseIncomingLine`):
+Read [the step-by-step code guide](docs/architecture-review.md). It explains the original bug, the small responsibilities of each file, and how a basket reaches the screen.
 
-```
-SCORE       -> +2 points
-SCORE:3     -> +3 points
-BASKET      -> +2 points
-GOAL        -> +2 points
-```
+Active games are held in memory and reset on page reload. High scores and calibration use local storage. No physical sensor is needed for this step.
 
-Edge-triggered messages (send once per made basket) are preferred over a raw
-continuous sensor stream — it's simpler to parse reliably and avoids
-re-triggering on sensor bounce or net movement. The frontend also applies its
-own debounce (400ms) as defense-in-depth.
+## Hoop size
 
-**Not yet written:** the actual Arduino sketch (sensor read → debounce → send
-`SCORE` over serial). That's the next step once the physical hoop + sensor
-are wired up.
+The standard rim is 64px wide, with a compact 240 × 150px backboard. The clickable area stays at least 56px tall so a smaller ring is still easy to use. **Calibrate Hoop → Std Scale** restores these dimensions. Previously saved standard dimensions are updated on load; custom dimensions are preserved.
+Game buttons sit beneath the timer to keep the rim visible. Empty HUD space lets pointer events reach the hoop; the buttons remain clickable. Verified the smaller rim by clicking it during a round and confirming a 2-point score.
 
-## Project structure
 
-```
-src/
-  App.tsx                     # game state machine, round timer, wiring
-  types.ts                    # shared types (GameState, HoopCalibration, ...)
-  components/
-    ScoreboardHUD.tsx         # score, timer, start/game-over prompts
-    HoopPlaceholder.tsx       # projected virtual backboard/rim + score popups
-    CalibrationControls.tsx   # hoop alignment + court theme panel
-    CourtBackground.tsx       # background court themes
-    SerialMonitorModal.tsx    # Arduino connect/packet log/test console
-    GameOverModal.tsx         # final score + high score entry
-    ArchitectureDocModal.tsx  # in-app course architecture spec
-  services/
-    hardwareAbstraction.ts    # ISensorDriver: Mock + WebSerial drivers
-    scoreStorage.ts           # localStorage high scores + calibration
-    audioEngine.ts            # procedural sound effects
-```
+## Crowd and streak visuals
 
-## Scope
+Basket feedback pops outside the backboard with “Woww!”, “Awesome!!” and “On Fire!” callouts. Every made shot refreshes a three-second streak deadline; expiry clears the streak and bonus. A streak of 3 adds cheering spectators and faint SVG/CSS fire; 6 adds another row. All crowd sprites stay behind the baseline, with two new character groups to reduce repetition. See [the scene and testing guide](docs/court-art.md) for the code, assets and testing steps.
 
-Single hoop, single player, local high scores only — no networking,
-database, or multi-hoop support. Kept deliberately simple so it's buildable
-and debuggable by a student team in one semester.
