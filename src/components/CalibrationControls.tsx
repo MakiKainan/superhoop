@@ -1,5 +1,6 @@
 import React from 'react';
 import { HoopCalibration } from '../types';
+import { DEFAULT_CALIBRATION } from '../services/scoreStorage';
 import {
   Sliders,
   Check,
@@ -133,7 +134,7 @@ export const CalibrationControls: React.FC<CalibrationControlsProps> = ({
           </div>
           <input
             type="range"
-            min="70"
+            min="48"
             max="220"
             step="2"
             value={calibration.rimDiameterPx}
@@ -207,7 +208,11 @@ export const CalibrationControls: React.FC<CalibrationControlsProps> = ({
             Center
           </button>
           <button
-            onClick={() => update({ widthPx: 395, heightPx: 250, rimDiameterPx: 118 })}
+            onClick={() => update({
+              widthPx: DEFAULT_CALIBRATION.widthPx,
+              heightPx: DEFAULT_CALIBRATION.heightPx,
+              rimDiameterPx: DEFAULT_CALIBRATION.rimDiameterPx,
+            })}
             className="px-2 py-0.5 bg-neutral-900 hover:bg-neutral-800 rounded border border-neutral-800 text-neutral-300"
             title="Standard Scale"
           >

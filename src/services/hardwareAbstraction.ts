@@ -1,306 +1,224 @@
-/**
- * Hardware Abstraction Layer (HAL) for Mini Basketball Sensor Input
- * 
- * Supports two interchangeable drivers:
- * 1. MockSensorInput: Keyboard triggers & UI buttons (for simulation/testing)
- * 2. WebSerialSensorInput: Direct USB Serial connection to Arduino via navigator.serial
- */
+import { SensorEvent, SensorSource, SerialStatus } from '../types';
 
-import { SensorEvent, SerialStatus } from '../types';
-
-export type ScoreListener = (event: SensorEvent) => void;
+export type SensorListener = (event: SensorEvent) => void;
 export type StatusListener = (status: SerialStatus) => void;
-
 export interface ISensorDriver {
   name: string;
   init(): void;
   cleanup(): void;
+  onEvent(listener: SensorListener): () => void;
+  getStatus(): SerialStatus;
   connect?(): Promise<boolean>;
   disconnect?(): Promise<void>;
-  simulateScore?(points?: number): void;
-  onScore(listener: ScoreListener): () => void;
   onStatusChange?(listener: StatusListener): () => void;
-  getStatus(): SerialStatus;
 }
 
-const DEFAULT_DEBOUNCE_MS = 400; // Software lockout to prevent ball bouncing re-trigger
+export function isInteractiveTarget(target: EventTarget | null, includeButtons = true): boolean {
+  return typeof Element !== 'undefined' && target instanceof Element &&
+    !!target.closest(`input, textarea, select, [contenteditable]:not([contenteditable="false"])${includeButtons ? ', button, a, [role="button"]' : ''}`);
+}
 
-/**
- * 1. Mock Sensor Driver (Used during Phase 1 development & demo mode)
- */
+let driverSequence = 0;
+
+/** Development input: one key press or click produces one made-basket event. */
 export class MockSensorDriver implements ISensorDriver {
-  public name = 'Simulated Input Driver';
-  private scoreListeners: Set<ScoreListener> = new Set();
-  private lastScoreTimestamp = 0;
-  private debounceMs = DEFAULT_DEBOUNCE_MS;
-
-  public init() {
-    window.addEventListener('keydown', this.handleKeyDown);
+  name = 'Mock sensor';
+  private listeners = new Set<SensorListener>();
+  private sequence = 0;
+  private readonly prefix = `mock-${++driverSequence}`;
+  constructor(private readonly clock: () => number = () => performance.now()) {}
+  init() { if (typeof window !== 'undefined') window.addEventListener('keydown', this.handleKeyDown); }
+  cleanup() {
+    if (typeof window !== 'undefined') window.removeEventListener('keydown', this.handleKeyDown);
+    this.listeners.clear();
   }
-
-  public cleanup() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    this.scoreListeners.clear();
-  }
-
-  private handleKeyDown = (e: KeyboardEvent) => {
-    // Space or 's' triggers a made basket
-    // Only if target is not an input or textarea
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
-
-    if (e.code === 'Space' || e.key === 's' || e.key === 'S') {
-      e.preventDefault();
-      this.simulateScore(2);
+  private handleKeyDown = (event: KeyboardEvent) => {
+    if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || isInteractiveTarget(event.target, event.code === 'Space')) return;
+    if (event.code === 'Space' || event.code === 'KeyS') {
+      event.preventDefault();
+      this.simulateScore(2, 'SIMULATOR_KEYBOARD');
     }
   };
-
-  public simulateScore(points: number = 2) {
-    const now = Date.now();
-    if (now - this.lastScoreTimestamp < this.debounceMs) {
-      // Ignored due to debounce lockout
-      return;
-    }
-    this.lastScoreTimestamp = now;
-
+  simulateScore(points = 2, source: SensorSource = 'SIMULATOR_UI'): SensorEvent {
     const event: SensorEvent = {
-      timestamp: now,
-      rawPayload: `MOCK_SCORE:${points}`,
-      points,
-      source: 'SIMULATOR_KEYBOARD',
+      id: `${this.prefix}-${++this.sequence}`, points,
+      timestamp: this.clock(), source, rawPayload: `MOCK_SCORE:${points}`,
     };
-
-    this.scoreListeners.forEach(listener => listener(event));
+    for (const listener of [...this.listeners]) listener(event);
+    return event;
   }
+  onEvent(listener: SensorListener) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+  getStatus(): SerialStatus { return { supported: true, connected: true, portName: 'Mock', baudRate: 0 }; }
+}
 
-  public onScore(listener: ScoreListener): () => void {
-    this.scoreListeners.add(listener);
-    return () => this.scoreListeners.delete(listener);
-  }
+// Existing serial adapter is kept for the later hardware step; App does not start it.
+interface SerialPortLike extends EventTarget {
+  readable: ReadableStream<Uint8Array> | null;
+  open(options: { baudRate: number }): Promise<void>;
+  close(): Promise<void>;
+}
+interface SerialApi extends EventTarget { requestPort(): Promise<SerialPortLike> }
+function serialApi(): SerialApi | undefined {
+  return typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { serial?: SerialApi }).serial;
+}
 
-  public getStatus(): SerialStatus {
-    return {
-      supported: true,
-      connected: true,
-      portName: 'Simulated (Spacebar / Click)',
-      baudRate: 0,
-      lastTimestamp: this.lastScoreTimestamp,
-    };
+/** Byte framing is separate from packet parsing and discards oversized lines until the next newline. */
+export class LineFramer {
+  private buffer = '';
+  private dropping = false;
+  push(chunk: string): string[] {
+    const lines: string[] = [];
+    for (const char of chunk) {
+      if (char === '\n') {
+        if (!this.dropping && this.buffer.trim()) lines.push(this.buffer.trim());
+        this.buffer = ''; this.dropping = false;
+      } else if (!this.dropping) {
+        if (this.buffer.length >= 512) { this.buffer = ''; this.dropping = true; }
+        else this.buffer += char;
+      }
+    }
+    return lines;
   }
 }
 
-/**
- * 2. Web Serial API Driver (Direct USB serial link with Arduino Uno / Nano / ESP32)
- */
 export class WebSerialDriver implements ISensorDriver {
-  public name = 'Arduino Web Serial Driver';
-  private scoreListeners: Set<ScoreListener> = new Set();
-  private statusListeners: Set<StatusListener> = new Set();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private port: any = null;
-  private reader: ReadableStreamDefaultReader<string> | null = null;
-  private readableStreamClosed: Promise<void> | null = null;
-  private keepReading = false;
-  private lastScoreTimestamp = 0;
-  private debounceMs = DEFAULT_DEBOUNCE_MS;
-
-  private status: SerialStatus = {
-    supported: typeof navigator !== 'undefined' && 'serial' in navigator,
-    connected: false,
-    baudRate: 115200,
-  };
-
-  public init() {
-    if (typeof navigator !== 'undefined' && 'serial' in navigator) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigator as any).serial.addEventListener('disconnect', this.handleDisconnect);
-    }
+  name = 'Arduino serial';
+  private listeners = new Set<SensorListener>();
+  private statusListeners = new Set<StatusListener>();
+  private port: SerialPortLike | null = null;
+  private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private reading: Promise<void> | null = null;
+  private connecting: Promise<boolean> | null = null;
+  private closing: Promise<void> | null = null;
+  private generation = 0;
+  private lastMadeAt = -Infinity;
+  private pinHigh = false;
+  private sequence = 0;
+  private readonly prefix = `serial-${++driverSequence}`;
+  private status: SerialStatus = { supported: !!serialApi(), connected: false, baudRate: 115200 };
+  constructor(private readonly clock: () => number = () => performance.now()) {}
+  init() { serialApi()?.addEventListener('disconnect', this.handleDisconnect); }
+  cleanup() {
+    serialApi()?.removeEventListener('disconnect', this.handleDisconnect);
+    this.listeners.clear(); this.statusListeners.clear();
+    void this.disconnect();
   }
-
-  public cleanup() {
-    this.disconnect();
-    if (typeof navigator !== 'undefined' && 'serial' in navigator) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigator as any).serial.removeEventListener('disconnect', this.handleDisconnect);
-    }
-    this.scoreListeners.clear();
-    this.statusListeners.clear();
-  }
-
-  private handleDisconnect = () => {
-    this.updateStatus({
-      connected: false,
-      error: 'Arduino was physically unplugged.',
-    });
+  private handleDisconnect = (event: Event) => {
+    if (event.target !== this.port && (event as Event & { port?: SerialPortLike }).port !== this.port) return;
+    this.updateStatus({ error: 'Arduino was unplugged.' });
+    void this.disconnect();
   };
-
-  public async connect(): Promise<boolean> {
-    if (!this.status.supported) {
-      this.updateStatus({ error: 'Web Serial API is not supported in this browser. Use Chrome or Edge.' });
-      return false;
-    }
-
+  connect(): Promise<boolean> {
+    if (this.connecting) return this.connecting;
+    if (this.status.connected) return Promise.resolve(true);
+    const generation = ++this.generation;
+    this.connecting = this.open(generation).finally(() => { this.connecting = null; });
+    return this.connecting;
+  }
+  private async open(generation: number): Promise<boolean> {
+    let selected: SerialPortLike | null = null;
+    let opened = false;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const serial = (navigator as any).serial;
-      this.port = await serial.requestPort();
-      await this.port.open({ baudRate: this.status.baudRate });
-
-      this.keepReading = true;
-      this.updateStatus({
-        connected: true,
-        portName: 'Arduino (USB Serial)',
-        error: undefined,
-      });
-
-      this.startReading();
+      const api = serialApi();
+      if (!api) throw new Error('Use Chrome or Edge for USB serial.');
+      // Invoke the chooser within the user gesture, before awaiting closing work.
+      const selection = api.requestPort();
+      selected = await selection;
+      await this.closing;
+      if (generation !== this.generation) return false;
+      await selected.open({ baudRate: this.status.baudRate });
+      opened = true;
+      if (generation !== this.generation) { await selected.close(); return false; }
+      this.port = selected;
+      this.pinHigh = false; this.lastMadeAt = -Infinity;
+      this.updateStatus({ connected: true, portName: 'Arduino (USB Serial)', error: undefined });
+      this.reading = this.read(selected, generation);
       return true;
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      this.updateStatus({
-        connected: false,
-        error: errorMsg.includes('No port selected') ? 'No USB device selected.' : errorMsg,
-      });
+    } catch (error) {
+      if (opened && selected) await selected.close().catch(() => {});
+      if (generation === this.generation) {
+        this.port = null;
+        this.updateStatus({ connected: false, error: error instanceof Error ? error.message : String(error) });
+      }
       return false;
     }
   }
-
-  public async disconnect(): Promise<void> {
-    this.keepReading = false;
+  disconnect(): Promise<void> {
+    ++this.generation; // invalidates a pending chooser/open/read before any await
+    this.updateStatus({ connected: false });
+    if (this.closing) return this.closing;
+    const port = this.port, reader = this.reader, reading = this.reading;
+    this.port = null;
+    this.closing = (async () => {
+      await reader?.cancel().catch(() => {});
+      await reading;
+      if (port) await port.close().catch(() => {});
+    })().finally(() => { this.closing = null; });
+    return this.closing;
+  }
+  private async read(port: SerialPortLike, generation: number) {
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
     try {
-      if (this.reader) {
-        await this.reader.cancel();
-        this.reader = null;
+      if (!port.readable) throw new Error('Serial input is unavailable.');
+      reader = port.readable.getReader();
+      this.reader = reader;
+      const decoder = new TextDecoder();
+      const framer = new LineFramer();
+      while (generation === this.generation) {
+        const { value, done } = await reader.read();
+        if (done || generation !== this.generation) break;
+        for (const line of framer.push(decoder.decode(value, { stream: true }))) {
+          if (generation !== this.generation) break;
+          this.parseIncomingLine(line);
+        }
       }
-      if (this.readableStreamClosed) {
-        await this.readableStreamClosed.catch(() => {});
-        this.readableStreamClosed = null;
-      }
-      if (this.port) {
-        await this.port.close();
-        this.port = null;
-      }
-    } catch (err) {
-      console.warn('Error closing serial port:', err);
+    } catch (error) {
+      if (generation === this.generation) this.updateStatus({ error: error instanceof Error ? error.message : 'Serial read failed.' });
     } finally {
-      this.updateStatus({
-        connected: false,
-      });
-    }
-  }
-
-  private async startReading() {
-    if (!this.port) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const textDecoder = new (window as any).TextDecoderStream();
-    this.readableStreamClosed = this.port.readable.pipeTo(textDecoder.writable);
-    this.reader = textDecoder.readable.getReader();
-
-    let buffer = '';
-
-    try {
-      while (this.keepReading && this.reader) {
-        const { value, done } = await this.reader.read();
-        if (done) {
-          break;
-        }
-        if (value) {
-          buffer += value;
-          const lines = buffer.split(/\r?\n/);
-          // Keep whatever incomplete line remains at the end
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            const cleanLine = line.trim();
-            if (cleanLine) {
-              this.parseIncomingLine(cleanLine);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      if (this.keepReading) {
-        console.error('Serial read error:', err);
-        this.updateStatus({ connected: false, error: 'Serial read error occurred.' });
+      reader?.releaseLock();
+      if (this.reader === reader) this.reader = null;
+      if (generation === this.generation) {
+        this.port = null;
+        await port.close().catch(() => {});
+        this.updateStatus({ connected: false });
       }
     }
   }
-
-  /**
-   * Parse incoming string packet from Arduino:
-   * Protocol formats supported:
-   * 1. "SCORE" or "SCORE:2" or "SCORE:3" (Recommended packet protocol)
-   * 2. "BASKET"
-   * 3. "1" or "HIGH" (raw pin state stream)
-   */
-  public parseIncomingLine(line: string) {
-    this.updateStatus({
-      lastMessage: line,
-      lastTimestamp: Date.now(),
-    });
-
-    const upper = line.toUpperCase();
+  parseIncomingLine(line: string) {
+    if (line.length > 512) return;
+    const packet = line.trim();
+    this.updateStatus({ lastMessage: packet, lastTimestamp: Date.now() });
+    const upper = packet.toUpperCase();
+    if (upper === '0' || upper === 'LOW') { this.pinHigh = false; return; }
+    const score = /^(?:SCORE(?::([123]))?|BASKET|GOAL)$/.exec(upper);
     let points = 2;
-    let isScore = false;
-
-    if (upper.startsWith('SCORE')) {
-      isScore = true;
-      const parts = upper.split(':');
-      if (parts.length > 1) {
-        const parsedPoints = parseInt(parts[1], 10);
-        if (!isNaN(parsedPoints) && parsedPoints > 0) {
-          points = parsedPoints;
-        }
-      }
-    } else if (upper === 'BASKET' || upper === 'GOAL') {
-      isScore = true;
-    } else if (upper === '1' || upper === 'HIGH') {
-      isScore = true;
-    }
-
-    if (isScore) {
-      const now = Date.now();
-      // Laptop-side defense-in-depth debounce
-      if (now - this.lastScoreTimestamp < this.debounceMs) {
-        return;
-      }
-      this.lastScoreTimestamp = now;
-
-      const event: SensorEvent = {
-        timestamp: now,
-        rawPayload: line,
-        points,
-        source: 'SERIAL_ARDUINO',
-      };
-
-      this.scoreListeners.forEach(listener => listener(event));
-    }
+    if (score) points = Number(score[1] || 2);
+    else if (upper === '1' || upper === 'HIGH') {
+      if (this.pinHigh) return;
+      this.pinHigh = true;
+    } else return;
+    const now = this.clock();
+    // Legacy device packets have no event ID, so keep the original bounce lockout.
+    if (now - this.lastMadeAt < 400) return;
+    this.lastMadeAt = now;
+    const event: SensorEvent = {
+      id: `${this.prefix}-${++this.sequence}`, points,
+      timestamp: now, rawPayload: packet, source: 'SERIAL_ARDUINO',
+    };
+    for (const listener of [...this.listeners]) listener(event);
   }
-
-  public setBaudRate(rate: number) {
-    this.status.baudRate = rate;
+  setBaudRate(rate: number) {
+    if (this.status.connected || this.connecting || ![9600, 19200, 38400, 57600, 115200].includes(rate)) return;
     this.updateStatus({ baudRate: rate });
   }
-
   private updateStatus(partial: Partial<SerialStatus>) {
     this.status = { ...this.status, ...partial };
-    this.statusListeners.forEach(l => l(this.status));
+    for (const listener of [...this.statusListeners]) listener(this.status);
   }
-
-  public onScore(listener: ScoreListener): () => void {
-    this.scoreListeners.add(listener);
-    return () => this.scoreListeners.delete(listener);
+  onEvent(listener: SensorListener) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+  onStatusChange(listener: StatusListener) {
+    this.statusListeners.add(listener); listener(this.status);
+    return () => { this.statusListeners.delete(listener); };
   }
-
-  public onStatusChange(listener: StatusListener): () => void {
-    this.statusListeners.add(listener);
-    listener(this.status);
-    return () => this.statusListeners.delete(listener);
-  }
-
-  public getStatus(): SerialStatus {
-    return this.status;
-  }
+  getStatus() { return this.status; }
 }

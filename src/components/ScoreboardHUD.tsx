@@ -58,7 +58,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
   const isOnFire = streak >= 3;
 
   return (
-    <header className="relative w-full z-20 flex flex-col items-center select-none pt-3 px-4 md:px-8">
+    <header className="relative w-full z-20 flex flex-col items-center select-none pt-3 px-4 md:px-8 pointer-events-none [&_button]:pointer-events-auto">
       {/* 1. TOP UTILITY BAR (Projector setup, Audio) */}
       <div className="w-full max-w-7xl flex flex-wrap items-center justify-between gap-3 text-xs">
         {/* Left: Quick Simulation trigger pill for easy testing */}
@@ -125,15 +125,15 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
                   : 'text-emerald-400 text-glow-emerald'
             }`}
           >
-            0:{String(timeRemaining).padStart(2, '0')}
+            {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
           </div>
           {/* Round progress bar */}
           <div className="w-full max-w-[120px] h-1.5 bg-neutral-800 rounded-full overflow-hidden mt-1.5">
             <div
-              className={`h-full transition-all duration-300 ${
+              className={`h-full origin-left transition-transform duration-300 ${
                 isPaused ? 'bg-neutral-500' : isFinalSeconds ? 'bg-red-500' : 'bg-emerald-400'
               }`}
-              style={{ width: `${(timeRemaining / roundDuration) * 100}%` }}
+              style={{ transform: `scaleX(${timeRemaining / roundDuration})` }}
             />
           </div>
         </div>
@@ -176,17 +176,17 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
             RECORD TO BEAT
           </span>
           <span className="text-2xl font-score text-cyan-400 text-glow-cyan">
-            {highScore ? String(highScore.score).padStart(2, '0') : '62'}
+            {highScore ? String(highScore.score).padStart(2, '0') : '00'}
           </span>
           <span className="text-base font-street text-purple-400 tracking-wider">
-            {highScore ? highScore.initials : 'KOB'}
+            {highScore ? highScore.initials : 'SET A RECORD'}
           </span>
         </div>
       )}
 
       {/* 3. IN-PLAY UTILITY BAR — during PLAYING and PAUSED, kept small so it doesn't block the court */}
       {isRoundActive && (
-        <div className="mt-3 flex items-center gap-2">
+        <div className="w-full max-w-4xl mt-3 flex items-center justify-start gap-2">
           <button
             id="pause-game-btn"
             onClick={onTogglePause}
@@ -288,7 +288,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
                 TIME OUT
               </span>
               <span className="font-street tracking-widest text-amber-300 text-lg md:text-2xl">
-                0:{String(timeRemaining).padStart(2, '0')} LEFT ON THE CLOCK
+                {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')} LEFT ON THE CLOCK
               </span>
               <button
                 id="resume-game-btn"
@@ -301,6 +301,7 @@ export const ScoreboardHUD: React.FC<ScoreboardHUDProps> = ({
               <span className="text-[11px] font-mono text-neutral-400">
                 Press [P] to resume — baskets don't count while paused
               </span>
+              <button onClick={onResetGame} className="text-sm font-mono text-neutral-300 underline">End round</button>
             </motion.div>
           </motion.div>
         )}

@@ -74,3 +74,136 @@
     text-shadow: 3px 3px 0 #0a0a0a, 0 0 22px rgba(168, 85, 247, 0.85);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Court art is decorative. Only transforms/opacity animate; geometry stays fixed. */
+.court-scene {
+  container-type: size;
+}
+.court-crowd-zone {
+  /* Source art is 1672 x 941; baseline is 64% down. object-cover is centered:
+     projected baseline = half scene height + 14% of the covered image height.
+     The 6px safety margin and clip keep even swaying feet off the court. */
+  position: absolute;
+  inset: 0 0 auto;
+  height: clamp(0px, calc(50cqh + max(14cqh, 7.879cqw) - 6px), 100cqh);
+  overflow: hidden;
+}
+.court-sky-glow {
+  position: absolute;
+  inset: 0 0 38%;
+  background: radial-gradient(ellipse at 72% 30%, #fbbf2420, transparent 55%);
+  animation: court-sky-breathe 7s ease-in-out infinite alternate;
+}
+.court-spectators { position: absolute; width: clamp(110px, 22vw, 320px); }
+.court-spectators img { display: block; width: 100%; height: auto; transform-origin: 50% 95%; }
+.court-regulars { bottom: 4px; }
+.court-regulars.court-left { left: 2%; }
+.court-regulars.court-right { right: 2%; transform: scaleX(-1); }
+.court-watch { animation: court-watch 3.8s ease-in-out infinite alternate; }
+.court-right .court-watch { animation-delay: -1.6s; }
+.court-arrivals { opacity: 0; visibility: hidden; transition: opacity 550ms ease, visibility 550ms; }
+.court-arrivals[data-visible="true"] { opacity: 1; visibility: visible; }
+.court-tier-1 { bottom: 10px; width: clamp(105px, 19vw, 270px); }
+.court-tier-1.court-left { left: 17%; }
+.court-tier-1.court-right { right: 17%; transform: scaleX(-1); }
+.court-tier-2 { bottom: 32px; width: clamp(105px, 21vw, 300px); }
+.court-tier-2.court-left { left: 1%; }
+.court-tier-2.court-right { right: 1%; transform: scaleX(-1); }
+.court-cheer { animation: court-cheer 850ms ease-in-out infinite alternate; }
+.court-right .court-cheer { animation-delay: -350ms; }
+.court-tier-2 .court-cheer { animation-delay: -600ms; animation-duration: 1050ms; }
+.court-arrivals[data-visible="false"] .court-animated { animation-play-state: paused; }
+.court-scene[data-paused="true"] .court-animated { animation-play-state: paused; }
+@keyframes court-sky-breathe { from { opacity: .3; } to { opacity: .8; } }
+@keyframes court-watch { from { transform: rotate(-.35deg); } to { transform: translateY(-2px) rotate(.35deg); } }
+@keyframes court-cheer { from { transform: translateY(0) rotate(-.6deg); } to { transform: translateY(-7px) rotate(.6deg); } }
+@media (max-width: 600px) {
+  .court-tier-1 { width: 24vw; }
+  .court-tier-1.court-left { left: 10%; }
+  .court-tier-1.court-right { right: 10%; }
+  .court-regulars { width: 26vw; }
+  .court-tier-2 { width: 28vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .court-scene .court-animated { animation: none !important; }
+  .court-scene .court-arrivals { transition: none; }
+}
+
+/* Code-only streak effect. Keep it mounted so interrupted fades reverse smoothly.
+   Fixed geometry and static fills: only transform/opacity animate, with no blur,
+   turbulence filters, layout animation, JS timers or per-frame React updates. */
+.streak-border {
+  --flame-depth: clamp(18px, 3.8vmin, 38px);
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 650ms ease, visibility 0s linear 650ms;
+}
+.streak-border:not([data-energy="0"]) {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.streak-tint, .streak-intensity, .streak-glow { position: absolute; inset: 0; }
+/* A constant, low-alpha red wash keeps the center and score readable. */
+.streak-tint { background: rgb(220 24 12 / 2%); }
+.streak-intensity {
+  background: rgb(240 35 12 / 1.5%);
+  opacity: 0;
+  transition: opacity 650ms ease;
+}
+.streak-border[data-energy="2"] .streak-intensity { opacity: 1; }
+.streak-glow {
+  background:
+    linear-gradient(to right, #ef301625, transparent 10%, transparent 90%, #ef301625),
+    linear-gradient(to bottom, #ef301625, transparent 12%, transparent 88%, #ef301625);
+  animation: streak-breathe 2.4s ease-in-out infinite alternate;
+}
+.streak-edge { position: absolute; display: block; overflow: visible; opacity: .32; }
+/* Static masks dissolve the inward tips into the surrounding glow.
+   No moving blur/filter: the browser animates the already drawn shapes. */
+.streak-edge-top { mask-image: linear-gradient(to bottom, #000, transparent); }
+.streak-edge-bottom { mask-image: linear-gradient(to top, #000, transparent); }
+.streak-edge-left { mask-image: linear-gradient(to right, #000, transparent); }
+.streak-edge-right { mask-image: linear-gradient(to left, #000, transparent); }
+.streak-edge-top, .streak-edge-bottom { left: 0; width: 100%; height: var(--flame-depth); }
+.streak-edge-top { top: 0; }
+.streak-edge-bottom { bottom: 0; }
+.streak-edge-left, .streak-edge-right { top: 0; height: 100%; width: var(--flame-depth); }
+.streak-edge-left { left: 0; }
+.streak-edge-right { right: 0; }
+.streak-flame-outer { fill: #ed692e; }
+.streak-flame-core { fill: #f4ab51; }
+.streak-tongue {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: streak-blaze var(--flame-duration) ease-in-out var(--flame-delay) infinite alternate;
+}
+.streak-border[data-energy="0"] .streak-animated,
+.streak-border[data-paused="true"] .streak-animated { animation-play-state: paused; }
+@keyframes streak-blaze {
+  0% { transform: scale(1.04, .65) skewX(-4deg); opacity: .7; }
+  45% { transform: scale(.99, .82) skewX(3deg); opacity: .9; }
+  100% { transform: scale(1.02, .96) skewX(-2deg); opacity: .8; }
+}
+@keyframes streak-breathe { from { opacity: .55; } to { opacity: .85; } }
+@media (prefers-reduced-motion: reduce) {
+  .streak-border .streak-animated { animation: none !important; }
+  .streak-border, .streak-intensity { transition: none; }
+  .streak-tongue { transform: scaleY(.7); opacity: .85; }
+  .streak-glow { opacity: .6; }
+}

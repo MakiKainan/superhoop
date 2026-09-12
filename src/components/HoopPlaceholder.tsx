@@ -1,60 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HoopCalibration, GameState } from '../types';
+import { ScoreFeedback } from '../game/sessionEngine';
 
 interface HoopPlaceholderProps {
   calibration: HoopCalibration;
   gameState: GameState;
-  scoreTrigger: { id: number; points: number; streak: number } | null;
+  scoreFeedback: readonly ScoreFeedback[];
   onCalibrationChange?: (updated: HoopCalibration) => void;
   isCalibrating: boolean;
   onManualScoreClick?: () => void;
 }
 
-export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
+export const HoopPlaceholder = React.memo(function HoopPlaceholder({
   calibration,
   gameState,
-  scoreTrigger,
+  scoreFeedback,
   onCalibrationChange,
   isCalibrating,
   onManualScoreClick,
-}) => {
+}: HoopPlaceholderProps) {
+  const lastFeedbackId = useRef(0);
   const [swishActive, setSwishActive] = useState(false);
-  const [floatingScores, setFloatingScores] = useState<
-    Array<{ id: number; points: number; streak: number; dx: number; dy: number; rotate: number }>
-  >([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, initX: 0, initY: 0 });
 
   // Trigger basket visual feedback on score event
   useEffect(() => {
-    if (!scoreTrigger) return;
+    const pending = scoreFeedback.filter(item => item.id > lastFeedbackId.current);
+    if (!pending.length) return;
+    lastFeedbackId.current = pending[pending.length - 1].id;
 
     setSwishActive(true);
     const swishTimeout = setTimeout(() => setSwishActive(false), 600);
 
-    // Each badge drifts to its own random spot around the rim so bursts of
-    // scores fan out instead of stacking in one column.
-    setFloatingScores(prev => [
-      ...prev,
-      {
-        ...scoreTrigger,
-        dx: (Math.random() - 0.5) * 160,
-        dy: -80 - Math.random() * 60,
-        rotate: (Math.random() - 0.5) * 20,
-      },
-    ]);
 
     return () => clearTimeout(swishTimeout);
-  }, [scoreTrigger]);
+  }, [scoreFeedback]);
 
-  // Removal is driven by each badge's own animation finishing (Framer's
-  // onAnimationComplete), not a timer — so a new score can never cancel an
-  // older badge's cleanup and leave it stuck on screen.
-  const handleFloatingScoreDone = (id: number) => {
-    setFloatingScores(prev => prev.filter(b => b.id !== id));
-  };
-
+  // Score and hype bubbles live outside the board in BasketFeedback.
   // Drag calibration handling
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isCalibrating || !onCalibrationChange) return;
@@ -111,7 +95,6 @@ export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
   // Inner shooter target box dimensions (standard 24"x18" ratio)
   const targetBoxWidth = Math.round(widthPx * 0.42);
   const targetBoxHeight = Math.round(heightPx * 0.42);
-  const rimRadius = rimDiameterPx / 2;
 
   return (
     <div
@@ -160,7 +143,7 @@ export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
             }}
           >
             <span className="text-[9px] font-mono uppercase font-black text-amber-300 drop-shadow">
-              RIM SENSOR TARGET
+              RIM
             </span>
           </div>
 
@@ -219,6 +202,7 @@ export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
         style={{
           bottom: `${Math.round(heightPx * 0.06)}px`,
           width: `${rimDiameterPx + 20}px`,
+          minHeight: '56px', // Keep the smaller ring comfortable to click or tap.
         }}
         onClick={() => onManualScoreClick && onManualScoreClick()}
         title="Click to simulate made basket"
@@ -291,41 +275,7 @@ export const HoopPlaceholder: React.FC<HoopPlaceholderProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 5. FLOATING SCORE POPUPS — burst outward from the rim (where the mini hoop sits) */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{ bottom: `${Math.round(heightPx * 0.06) + Math.round(rimDiameterPx * 0.21)}px` }}
-      >
-        <AnimatePresence>
-          {floatingScores.map(badge => (
-            <motion.div
-              key={badge.id}
-              initial={{ x: 0, y: 0, opacity: 0, scale: 0.6, rotate: 0 }}
-              animate={{
-                x: badge.dx,
-                y: badge.dy,
-                opacity: [0, 1, 1, 0],
-                scale: 1.2,
-                rotate: badge.rotate,
-              }}
-              transition={{ duration: 1.1, ease: 'easeOut', times: [0, 0.15, 0.75, 1] }}
-              onAnimationComplete={() => handleFloatingScoreDone(badge.id)}
-              className={`absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-score tracking-wider px-3 py-1 rounded-full shadow-2xl flex items-center gap-1.5 border ${
-                badge.streak >= 3
-                  ? 'bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 text-white border-yellow-300 text-2xl drop-shadow-[0_0_20px_rgba(239,68,68,0.9)]'
-                  : 'bg-amber-500 text-black border-amber-300 text-xl drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]'
-              }`}
-            >
-              <span>+{badge.points}</span>
-              {badge.streak >= 3 && (
-                <span className="text-xs bg-black/40 px-1.5 py-0.5 rounded text-amber-200">
-                  🔥 STREAK x{badge.streak}!
-                </span>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
     </div>
   );
-};
+});
+
